@@ -167,14 +167,17 @@ class LC_Page_Plugin_Ebiten_Config extends LC_Page_Admin_Ex {
             $objErr->doFunc(array('実施割合', 'per', 100), array('MAX_CHECK'));
             $objErr->doFunc(array('実施割合', 'per', 1), array('MIN_CHECK'));
 
-            $case_selected = FALSE;
+            $case_selected = array();
             for ($i = 0; $i < $this->settings['max_cases']; $i++) {
                 if (strlen($arrForm["case_{$i}_tpl_code"]) != 0) {
-                    $case_selected = TRUE;
-                    break;
+                    if (in_array($arrForm["case_{$i}_tpl_code"], $case_selected)) {
+                        $arrErr["case_{$i}_tpl_code"] = '※ 重複して選択されているテンプレートがあります。<br />';
+                    } else {
+                        $case_selected[] = $arrForm["case_{$i}_tpl_code"];
+                    }
                 }
             }
-            !$case_selected and $arrErr['case_0_tpl_code'] = '※ テストケーステンプレートが選択されていません。<br />';
+            !count($case_selected) and $arrErr['case_0_tpl_code'] = '※ テストケーステンプレートが選択されていません。<br />';
         }
 
         return array_merge((array)$arrErr, (array)$objErr->arrErr);
