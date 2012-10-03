@@ -78,6 +78,9 @@ class Ebiten extends SC_Plugin_Base {
                 'per' => '',
                 'tpl_value' => '',
                 'case' => array(0 => array())
+            ),
+            'general' => array(
+                'max_cases' => 10,
             )
         );
         Model_Plugin_Ebiten::update($data);

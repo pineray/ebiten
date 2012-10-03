@@ -85,12 +85,13 @@
     </tr>
 </table>
 
-<h4>テストケース</h4>
+<!--{section loop=$settings.max_cases name=case}-->
+<h4>テストケース <!--{$smarty.section.case.iteration}--></h4>
 <table>
     <tr><th>テンプレート</th></tr>
     <tr>
         <td>
-            <!--{assign var=key value="case_0_tpl_code"}-->
+            <!--{assign var=key value="case_`$smarty.section.case.index`_tpl_code"}-->
             <!--{if $arrErr[$key] != ''}-->
             <span class="red"><!--{$arrErr[$key]}--></span>
             <!--{/if}-->
@@ -106,7 +107,7 @@
     <tr>
         <td>
             選択したテンプレートにSmartyコード「&lt;!--{$tpl_ebiten}--&gt;」を挿入すると、以下のテキストエリアに入力した内容を出力することができます。<br />
-            <!--{assign var=key value="case_0_tpl_value"}-->
+            <!--{assign var=key value="case_`$smarty.section.case.index`_tpl_value"}-->
             <!--{if $arrErr[$key] != ''}-->
             <span class="red"><!--{$arrErr[$key]}--></span>
             <!--{/if}-->
@@ -114,6 +115,7 @@
         </td>
     </tr>
 </table>
+<!--{/section}-->
 
 <div class="btn-area">
     <ul>

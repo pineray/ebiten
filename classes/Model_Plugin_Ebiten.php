@@ -50,8 +50,8 @@ class Model_Plugin_Ebiten {
      * @param string $key
      * @return array
      */
-    public static function getSetting($key) {
-        !Model_Plugin_Ebiten::$_settings and Model_Plugin_Ebiten::forge();
+    public static function getSetting($key, $reset = FALSE) {
+        if (!Model_Plugin_Ebiten::$_settings || $reset) Model_Plugin_Ebiten::forge();
         return isset(Model_Plugin_Ebiten::$_settings[$key]) ? Model_Plugin_Ebiten::$_settings[$key] : FALSE;
     }
 

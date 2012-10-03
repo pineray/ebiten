@@ -32,6 +32,7 @@ require_once PLUGIN_UPLOAD_REALDIR . 'Ebiten/classes/Model_Plugin_Ebiten.php';
 class LC_Page_Plugin_Ebiten_Config extends LC_Page_Admin_Ex {
     public $device = NULL;
     public $templates = array();
+    public $settings = array();
 
     /**
      * 初期化.
@@ -42,6 +43,8 @@ class LC_Page_Plugin_Ebiten_Config extends LC_Page_Admin_Ex {
         parent::init();
         $this->tpl_mainpage = PLUGIN_UPLOAD_REALDIR ."Ebiten/templates/config.tpl";
         $this->tpl_subtitle = "EBITEN";
+        // プラグイン共通設定を取得.
+        $this->settings = Model_Plugin_Ebiten::getSetting('general');
     }
 
     /**
@@ -89,16 +92,22 @@ class LC_Page_Plugin_Ebiten_Config extends LC_Page_Admin_Ex {
                 $data[$this->device]['per'] = $arrForm['per'];
                 $data[$this->device]['tpl_value'] = $arrForm['tpl_value'];
                 // テストケース
-                $data[$this->device]['case'][0] = array();
-                if ($arrForm['case_0_tpl_code'] != '') {
-                    $data[$this->device]['case'][0]['tpl_code'] = $arrForm['case_0_tpl_code'];
-                    $data[$this->device]['case'][0]['tpl_value'] = $arrForm['case_0_tpl_value'];
-                } else {
-                    $arrForm['case_0_tpl_value'] = '';
+                $case_index = 0;
+                for ($i = 0; $i < $this->settings['max_cases']; $i++) {
+                    if ($arrForm["case_{$i}_tpl_code"] != '') {
+                        $data[$this->device]['case'][$case_index] = array();
+                        $data[$this->device]['case'][$case_index]['tpl_code'] = $arrForm["case_{$i}_tpl_code"];
+                        $data[$this->device]['case'][$case_index]['tpl_value'] = $arrForm["case_{$i}_tpl_value"];
+                        $case_index++;
+                    } else {
+                        $arrForm["case_{$i}_tpl_value"] = '';
+                    }
                 }
                 // データ更新
                 if (Model_Plugin_Ebiten::update($data)) {
                     $this->tpl_onload = "alert('登録が完了しました。');";
+                    // フォームのデフォルト値をセットする
+                    $this->setFormDefault($arrForm);
                 }
                 else {
                     $this->tpl_onload = "alert('エラーが発生しました。');";
@@ -106,14 +115,8 @@ class LC_Page_Plugin_Ebiten_Config extends LC_Page_Admin_Ex {
             }
             break;
         default:
-            // プラグイン情報を取得.
-            $data = Model_Plugin_Ebiten::getSetting($this->device);
-            $arrForm['status'] = $data['status'];
-            $arrForm['per'] = $data['per'];
-            $arrForm['tpl_value'] = $data['tpl_value'];
-
-            $arrForm['case_0_tpl_code'] = $data['case'][0]['tpl_code'];
-            $arrForm['case_0_tpl_value'] = $data['case'][0]['tpl_value'];
+            // フォームのデフォルト値をセットする
+            $this->setFormDefault($arrForm);
             break;
         }
         $this->arrForm = $arrForm;
@@ -141,8 +144,10 @@ class LC_Page_Plugin_Ebiten_Config extends LC_Page_Admin_Ex {
         $objFormParam->addParam('実施割合', 'per', PERCENTAGE_LEN, 'n', array('SPTAB_CHECK','MAX_LENGTH_CHECK', 'NUM_CHECK'));
         $objFormParam->addParam('デフォルト出力コード', 'tpl_value');
 
-        $objFormParam->addParam('テストケーステンプレート', 'case_0_tpl_code', STEXT_LEN, 'a', array('SPTAB_CHECK','MAX_LENGTH_CHECK', 'ALNUM_CHECK'));
-        $objFormParam->addParam('テストケース出力コード', 'case_0_tpl_value');
+        for ($i = 0; $i < $this->settings['max_cases']; $i++) {
+            $objFormParam->addParam("テストケーステンプレート{$i}", "case_{$i}_tpl_code", STEXT_LEN, 'a', array('SPTAB_CHECK','MAX_LENGTH_CHECK', 'ALNUM_CHECK'));
+            $objFormParam->addParam("テストケース出力コード{$i}", "case_{$i}_tpl_value");
+        }
     }
 
     /**
@@ -161,10 +166,37 @@ class LC_Page_Plugin_Ebiten_Config extends LC_Page_Admin_Ex {
             $objErr->doFunc(array('実施割合', 'per'), array('EXIST_CHECK'));
             $objErr->doFunc(array('実施割合', 'per', 100), array('MAX_CHECK'));
             $objErr->doFunc(array('実施割合', 'per', 1), array('MIN_CHECK'));
-            $objErr->doFunc(array('テストケーステンプレート', 'case_0_tpl_code'), array('SELECT_CHECK'));
+
+            $case_selected = FALSE;
+            for ($i = 0; $i < $this->settings['max_cases']; $i++) {
+                if (strlen($arrForm["case_{$i}_tpl_code"]) != 0) {
+                    $case_selected = TRUE;
+                    break;
+                }
+            }
+            !$case_selected and $arrErr['case_0_tpl_code'] = '※ テストケーステンプレートが選択されていません。<br />';
         }
 
         return array_merge((array)$arrErr, (array)$objErr->arrErr);
+    }
+
+    /**
+     * フォームのデフォルト値をセットする.
+     * 
+     * @param array $arrForm
+     * @return void
+     */
+    function setFormDefault(&$arrForm) {
+        // プラグイン情報を取得.
+        $data = Model_Plugin_Ebiten::getSetting($this->device, TRUE);
+        $arrForm['status'] = $data['status'];
+        $arrForm['per'] = $data['per'];
+        $arrForm['tpl_value'] = $data['tpl_value'];
+
+        for ($i = 0; $i < $this->settings['max_cases']; $i++) {
+            $arrForm["case_{$i}_tpl_code"] = $data['case'][$i]['tpl_code'];
+            $arrForm["case_{$i}_tpl_value"] = $data['case'][$i]['tpl_value'];
+        }
     }
 
     /**
