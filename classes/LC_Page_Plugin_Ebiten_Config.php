@@ -33,6 +33,7 @@ class LC_Page_Plugin_Ebiten_Config extends LC_Page_Admin_Ex {
     public $device = NULL;
     public $templates = array();
     public $settings = array();
+    public $max_forms = 0;
 
     /**
      * 初期化.
@@ -78,6 +79,7 @@ class LC_Page_Plugin_Ebiten_Config extends LC_Page_Admin_Ex {
             }
         }
         $this->templates = $templates;
+        $this->max_forms = ($this->settings['max_cases'] <= count($templates)) ? $this->settings['max_cases'] : count($templates);
         $arrForm = array();
         $arrForm['device'] = $this->device;
         

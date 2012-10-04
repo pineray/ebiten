@@ -85,7 +85,7 @@
     </tr>
 </table>
 
-<!--{section loop=$settings.max_cases name=case}-->
+<!--{section loop=$max_forms name=case}-->
 <h4>テストケース <!--{$smarty.section.case.iteration}--></h4>
 <table>
     <tr><th>テンプレート</th></tr>
