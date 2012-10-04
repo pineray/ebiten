@@ -99,10 +99,11 @@ class Model_Plugin_Ebiten {
         !$device_type_id and $device_type_id = SC_Display_Ex::detectDevice();
         $setting_device = Model_Plugin_Ebiten::getSetting($device_type_id);
         if ($setting_device['status']) {
-            if (!isset($_SESSION['ebiten']) || !in_array($_SESSION['ebiten'], array('default','case_0'))) {
+            if (!isset($_SESSION['ebiten']) || ($_SESSION['ebiten'] != 'default' && !(preg_match("/^case_(\d+)$/", $_SESSION['ebiten'], $match = array()) && $match[1] < count($setting_device['case'])))) {
                 $rnd = rand(0, 100);
                 if ($rnd <= $setting_device['per']) {
-                    $_SESSION['ebiten'] = 'case_0';
+                    $case_key = array_rand($setting_device['case']);
+                    $_SESSION['ebiten'] = 'case_' . $case_key;
                 } else {
                     $_SESSION['ebiten'] = 'default';
                 }
@@ -126,10 +127,7 @@ class Model_Plugin_Ebiten {
         $case =  Model_Plugin_Ebiten::sessionVerify();
         $tpl_code = '';
 
-        if ($case == 'case_0') {
-            $setting = Model_Plugin_Ebiten::getSetting($device_type_id);
-            $tpl_code = $setting['case'][0]['tpl_code'];
-        } else {
+        if ($case == 'default') {
             switch ($device_type_id) {
                 case DEVICE_TYPE_MOBILE:
                     $tpl_code = MOBILE_TEMPLATE_NAME;
@@ -142,6 +140,10 @@ class Model_Plugin_Ebiten {
                     $tpl_code = TEMPLATE_NAME;
                     break;
             }
+        } else {
+            $setting = Model_Plugin_Ebiten::getSetting($device_type_id);
+            $case_key = str_replace('case_', '', $case);
+            $tpl_code = $setting['case'][$case_key]['tpl_code'];
         }
         
         return $tpl_code;
@@ -156,7 +158,12 @@ class Model_Plugin_Ebiten {
     public static function getTplValue($device_type_id = FALSE) {
         !$device_type_id and $device_type_id = SC_Display_Ex::detectDevice();
         $setting = Model_Plugin_Ebiten::getSetting($device_type_id);
-        return ($_SESSION['ebiten'] === 'default') ? $setting['tpl_value'] : $setting['case'][0]['tpl_value'];
+        if ($_SESSION['ebiten'] === 'default') {
+            return $setting['tpl_value'];
+        } else {
+            $case_key = str_replace('case_', '', $_SESSION['ebiten']);
+            return $setting['case'][$case_key]['tpl_value'];
+        }
     }
 
     /**
@@ -169,11 +176,19 @@ class Model_Plugin_Ebiten {
      */
     public static function disableTpl($device_type_id, $tpl_code) {
         $setting = Model_Plugin_Ebiten::getSetting($device_type_id);
-        if ($setting['status'] == 0 || !isset($setting['case'][0]['tpl_code']) || $setting['case'][0]['tpl_code'] != $tpl_code) {
-            return;
-        } else {
-            $setting['status'] = 0;
-            Model_Plugin_Ebiten::update(array($device_type_id => $setting));
+        if ($setting['status'] != 0) {
+            $alter_cases = array();
+            foreach ($setting['case'] as $value) {
+                if ($value['tpl_code'] != $tpl_code) {
+                    $alter_cases[] = $value;
+                }
+            }
+            if (count($setting['case']) != count($alter_cases)) {
+                $setting['case'] = $alter_cases;
+                $setting['status'] = 0;
+                Model_Plugin_Ebiten::update(array($device_type_id => $setting));
+            }
         }
+        return;
     }
 }
